@@ -3,7 +3,7 @@
 > Live multi-sport analytics dashboard powered by **SPARQL**, **Wikidata**, **DBpedia**, and real-time sports APIs — built as an extension of a CS Semantic Web & Ontology university project.
 
 ![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)
-![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?logo=tailwindcss&logoColor=white)
 ![SPARQL](https://img.shields.io/badge/SPARQL-1.1-FF6B35?logo=data:image/svg+xml;base64,PHN2Zy8+)
