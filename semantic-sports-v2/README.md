@@ -2,6 +2,8 @@
 
 > Live multi-sport analytics dashboard powered by **SPARQL**, **Wikidata**, **DBpedia**, and real-time sports APIs — built as an extension of a CS Semantic Web & Ontology university project.
 
+For the full repository (Premier League Python pipeline, data, and report materials), see the [**main README**](../README.md).
+
 ![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
