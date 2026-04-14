@@ -136,12 +136,17 @@ export default function SportTab({ data, loading, error, refetch, sport, tab }) 
       <div className="card p-5">
         <SectionHeader
           title="Home Advantage by Team"
-          sub="Home win % minus away win % — sorted by advantage"
+          sub={
+            isSoccer
+              ? 'Every club in the league table is listed; home win % minus away win % (sorted by advantage).'
+              : 'Home win % minus away win % — sorted by advantage'
+          }
         />
         <AdvantageChart
           teams={data.teamAdvantage || []}
           tab={tab}
           teamMeta={data.teamMeta || {}}
+          showAllByDefault={isSoccer}
         />
       </div>
 

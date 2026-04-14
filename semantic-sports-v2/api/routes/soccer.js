@@ -82,10 +82,10 @@ router.get('/', async (req, res) => {
     const matchSource = useRest ? 'football-data.org (REST)' : (wdCount ? 'Wikidata SPARQL' : 'demo (generated)')
 
     const leagueStats = calcLeagueStats(matches)
-    const teamAdvantage = calcHomeAdvantage(matches)
-    const chiSq = chiSquareTest(leagueStats.homeWins, leagueStats.awayWins, leagueStats.draws)
-
+    const teamAdvantageRaw = calcHomeAdvantage(matches)
     const standings = live?.standings || getMockStandings(league)
+    const teamAdvantage = mergeTeamAdvantageWithStandings(standings, teamAdvantageRaw)
+    const chiSq = chiSquareTest(leagueStats.homeWins, leagueStats.awayWins, leagueStats.draws)
     const fixtures  = live?.fixtures  || getMockFixtures(league)
 
     const predictions = fixtures.slice(0, 10).map(f => ({
@@ -192,6 +192,94 @@ async function fetchFootballData(league, config) {
   return { standings, matches, fixtures }
 }
 
+/**
+ * Normalize club names so REST standings labels align with SPARQL / Wikidata labels.
+ */
+function normalizeClubKey(name) {
+  if (!name) return ''
+  let s = String(name).toLowerCase().trim()
+  s = s.replace(/\./g, '')
+  s = s.replace(/\s+fc\s*$/i, '').replace(/\s+cf\s*$/i, '').replace(/\s+afc\s*$/i, '')
+  s = s.replace(/\s+sc\s*$/i, '').replace(/\s+ac\s*$/i, '')
+  s = s.replace(/\s+club\s*$/i, '')
+  s = s.replace(/\s+/g, ' ').trim()
+  return s
+}
+
+const CLUB_ALIAS = new Map(
+  Object.entries({
+    spurs: 'tottenham hotspur',
+    'tottenham hotspur fc': 'tottenham hotspur',
+    'man utd': 'manchester united',
+    'man united': 'manchester united',
+    'manchester utd': 'manchester united',
+    'man city': 'manchester city',
+    'nottm forest': 'nottingham forest',
+    "nott'm forest": 'nottingham forest',
+    wolves: 'wolverhampton wanderers',
+    'wolverhampton wanderers fc': 'wolverhampton wanderers',
+    brighton: 'brighton & hove albion',
+    'west ham': 'west ham united',
+    'newcastle utd': 'newcastle united',
+  }).flatMap(([k, v]) => [[k, v], [normalizeClubKey(k), v]])
+)
+
+function canonicalClubKey(name) {
+  const n = normalizeClubKey(name)
+  return CLUB_ALIAS.get(n) || CLUB_ALIAS.get(normalizeClubKey(n.replace(/'/g, ''))) || n
+}
+
+/**
+ * Find home-advantage row for a standings club (handles FC suffix / Wikidata label drift).
+ */
+function findAdvantageForStandingsTeam(standTeam, rows) {
+  const target = canonicalClubKey(standTeam)
+  for (const r of rows) {
+    if (canonicalClubKey(r.team) === target) return r
+  }
+  for (const r of rows) {
+    const a = normalizeClubKey(standTeam)
+    const b = normalizeClubKey(r.team)
+    if (a === b || a.includes(b) || b.includes(a)) return r
+  }
+  for (const r of rows) {
+    const a = canonicalClubKey(standTeam)
+    const b = canonicalClubKey(r.team)
+    if (a.includes(b) || b.includes(a)) return r
+  }
+  return null
+}
+
+/**
+ * One row per league table club (e.g. all 20 Premier League teams), preserving table order.
+ * Clubs with too few finished matches in the sample get insufficientData + zeros.
+ */
+function mergeTeamAdvantageWithStandings(standings, teamAdvantageRaw) {
+  if (!standings?.length) return teamAdvantageRaw
+
+  const rows = [...teamAdvantageRaw]
+  const merged = standings.map(row => {
+    const hit = findAdvantageForStandingsTeam(row.team, rows)
+    if (hit) return { ...hit, team: row.team }
+    return {
+      team: row.team,
+      homeWinPct: 0,
+      awayWinPct: 0,
+      advantage: 0,
+      homePlayed: 0,
+      awayPlayed: 0,
+      homeWins: 0,
+      awayWins: 0,
+      insufficientData: true,
+    }
+  })
+  return merged.sort((a, b) => {
+    if (a.insufficientData && !b.insufficientData) return 1
+    if (!a.insufficientData && b.insufficientData) return -1
+    return b.advantage - a.advantage
+  })
+}
+
 // ── SPARQL enrichment (Wikidata + DBpedia) ─────────────────────────────────
 async function fetchSparqlData(league, config) {
   const seasonsValues = config.wdSeasons.join('\n    ')
@@ -267,10 +355,23 @@ LIMIT 50`
 }
 
 // ── Mock data fallbacks ─────────────────────────────────────────────────────
+/** Full 20-club sets so the dashboard matches “every team in the league”. */
+const MOCK_PL_CLUBS = [
+  'Arsenal FC', 'Aston Villa FC', 'AFC Bournemouth', 'Brentford FC', 'Brighton & Hove Albion FC',
+  'Burnley FC', 'Chelsea FC', 'Crystal Palace FC', 'Everton FC', 'Fulham FC',
+  'Liverpool FC', 'Manchester City FC', 'Manchester United FC', 'Newcastle United FC',
+  'Nottingham Forest FC', 'Southampton FC', 'Tottenham Hotspur FC', 'West Ham United FC',
+  'Wolverhampton Wanderers FC', 'Leicester City FC',
+]
+const MOCK_PD_CLUBS = [
+  'Real Madrid CF', 'FC Barcelona', 'Club Atlético de Madrid', 'Sevilla FC', 'Real Betis Balompié',
+  'Valencia CF', 'Villarreal CF', 'Athletic Club', 'Real Sociedad de Fútbol', 'CA Osasuna',
+  'RCD Mallorca', 'Getafe CF', 'RC Celta de Vigo', 'Girona FC', 'Rayo Vallecano',
+  'UD Las Palmas', 'Deportivo Alavés', 'RCD Espanyol de Barcelona', 'Real Valladolid CF', 'CD Leganés',
+]
+
 function getMockMatches(league) {
-  const teams = league === 'PL'
-    ? ['Arsenal', 'Chelsea', 'Liverpool', 'Man City', 'Man United', 'Spurs', 'Newcastle', 'Aston Villa', 'Brighton', 'West Ham']
-    : ['Real Madrid', 'Barcelona', 'Atletico Madrid', 'Sevilla', 'Real Betis', 'Valencia', 'Villarreal', 'Athletic Club', 'Real Sociedad', 'Osasuna']
+  const teams = league === 'PL' ? MOCK_PL_CLUBS : MOCK_PD_CLUBS
 
   // Generate 6 seasons worth of mock matches (6 × 380 = 2,280)
   const matches = []
@@ -298,20 +399,23 @@ function getMockMatches(league) {
 }
 
 function getMockStandings(league) {
-  const teams = league === 'PL'
-    ? ['Man City', 'Arsenal', 'Liverpool', 'Aston Villa', 'Spurs', 'Chelsea', 'Newcastle', 'Man United', 'West Ham', 'Brighton']
-    : ['Real Madrid', 'Barcelona', 'Atletico Madrid', 'Girona', 'Villarreal', 'Athletic Club', 'Real Betis', 'Real Sociedad', 'Las Palmas', 'Getafe']
+  const teams = league === 'PL' ? MOCK_PL_CLUBS : MOCK_PD_CLUBS
   return teams.map((team, i) => ({
-    position: i + 1, team, played: 30, won: 20 - i * 1.5 | 0,
-    drawn: 5, lost: 5 + i | 0, gf: 60 - i * 4, ga: 20 + i * 3,
-    gd: 40 - i * 7, points: 65 - i * 5,
+    position: i + 1,
+    team,
+    played: 28,
+    won: Math.max(2, 18 - Math.floor(i * 0.85)),
+    drawn: 6,
+    lost: Math.min(22, 4 + Math.floor(i * 0.6)),
+    gf: 58 - i * 2,
+    ga: 22 + i * 2,
+    gd: 36 - i * 4,
+    points: Math.max(15, 62 - i * 3),
   }))
 }
 
 function getMockFixtures(league) {
-  const teams = league === 'PL'
-    ? ['Arsenal', 'Chelsea', 'Liverpool', 'Man City', 'Spurs', 'Newcastle']
-    : ['Real Madrid', 'Barcelona', 'Atletico Madrid', 'Sevilla', 'Valencia', 'Villarreal']
+  const teams = league === 'PL' ? MOCK_PL_CLUBS : MOCK_PD_CLUBS
   return [
     { id: 1, date: new Date(Date.now() + 86400000 * 3).toISOString(), homeTeam: teams[0], awayTeam: teams[1], matchday: 31 },
     { id: 2, date: new Date(Date.now() + 86400000 * 3).toISOString(), homeTeam: teams[2], awayTeam: teams[3], matchday: 31 },
@@ -324,7 +428,9 @@ function getMockFixtures(league) {
 function buildMockResponse(league, config, errorMsg) {
   const matches = getMockMatches(league)
   const leagueStats = calcLeagueStats(matches)
-  const teamAdvantage = calcHomeAdvantage(matches)
+  const teamAdvantageRaw = calcHomeAdvantage(matches)
+  const standings = getMockStandings(league)
+  const teamAdvantage = mergeTeamAdvantageWithStandings(standings, teamAdvantageRaw)
   const chiSq = chiSquareTest(leagueStats.homeWins, leagueStats.awayWins, leagueStats.draws)
   const fixtures = getMockFixtures(league)
   return {
@@ -332,7 +438,7 @@ function buildMockResponse(league, config, errorMsg) {
     wikidataURI: config.wikidataURI, wikidataEntity: config.wikidataEntity,
     colorPrimary: config.colorPrimary, colorAccent: config.colorAccent,
     leagueStats, chiSquare: chiSq, teamAdvantage, teamMeta: {},
-    standings: getMockStandings(league), fixtures,
+    standings, fixtures,
     predictions: fixtures.map(f => ({ ...f, prediction: predictWinner(f.homeTeam, f.awayTeam, teamAdvantage, leagueStats.drawPct) })),
     matchCount: matches.length,
     matchSource: 'demo (generated)',

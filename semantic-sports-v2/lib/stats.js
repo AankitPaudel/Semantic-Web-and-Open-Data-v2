@@ -67,7 +67,9 @@ function calcHomeAdvantage(matches) {
     }
   }
 
-  const MIN_GAMES = 5
+  // Lower threshold so current-season clubs still appear when the match sample is shorter;
+  // soccer route merges with league standings so every club gets a row.
+  const MIN_GAMES = 3
   return Object.entries(teams)
     .filter(([, t]) => t.homePlayed >= MIN_GAMES && t.awayPlayed >= MIN_GAMES)
     .map(([team, t]) => {

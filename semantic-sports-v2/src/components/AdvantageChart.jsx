@@ -2,9 +2,10 @@ import { useState } from 'react'
 
 function TeamRow({ team, rank, accent, meta, maxAbs }) {
   const [hovered, setHovered] = useState(false)
-  const isPos   = team.advantage >= 0
-  const barPct  = Math.min(Math.abs(team.advantage / maxAbs) * 100, 100)
-  const color   = isPos ? accent : '#f87171'
+  const insufficient = team.insufficientData === true
+  const isPos   = !insufficient && team.advantage >= 0
+  const barPct  = insufficient ? 0 : Math.min(Math.abs(team.advantage / maxAbs) * 100, 100)
+  const color   = insufficient ? '#64748b' : (isPos ? accent : '#f87171')
 
   return (
     <div
@@ -29,16 +30,18 @@ function TeamRow({ team, rank, accent, meta, maxAbs }) {
         {/* Bar track */}
         <div className="flex-1 flex items-center gap-3">
           <div className="flex-1 h-[6px] bg-white/[0.06] rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full bar-animate"
-              style={{
-                width: `${barPct}%`,
-                background: isPos
-                  ? `linear-gradient(90deg, ${accent}60, ${accent})`
-                  : 'linear-gradient(90deg, #f8717160, #f87171)',
-                animationDelay: `${rank * 30}ms`,
-              }}
-            />
+            {!insufficient && (
+              <div
+                className="h-full rounded-full bar-animate"
+                style={{
+                  width: `${barPct}%`,
+                  background: isPos
+                    ? `linear-gradient(90deg, ${accent}60, ${accent})`
+                    : 'linear-gradient(90deg, #f8717160, #f87171)',
+                  animationDelay: `${rank * 30}ms`,
+                }}
+              />
+            )}
           </div>
 
           {/* Value */}
@@ -46,12 +49,12 @@ function TeamRow({ team, rank, accent, meta, maxAbs }) {
             className="text-[13px] font-bold tabular-nums w-14 text-right flex-shrink-0"
             style={{ color }}
           >
-            {team.advantage > 0 ? '+' : ''}{team.advantage}%
+            {insufficient ? '—' : `${team.advantage > 0 ? '+' : ''}${team.advantage}%`}
           </span>
 
           {/* Mini stats */}
           <span className="hidden sm:block text-[11px] text-gray-600 w-24 text-right flex-shrink-0">
-            H {team.homeWinPct}% / A {team.awayWinPct}%
+            {insufficient ? 'No sample' : `H ${team.homeWinPct}% / A ${team.awayWinPct}%`}
           </span>
         </div>
       </div>
@@ -62,25 +65,33 @@ function TeamRow({ team, rank, accent, meta, maxAbs }) {
              style={{ border: `1px solid ${accent}30` }}>
           <p className="text-[13px] font-bold text-white mb-3">{team.team}</p>
           <div className="space-y-2">
-            <div className="flex justify-between text-[12px]">
-              <span className="text-gray-500">Home win rate</span>
-              <span className="font-semibold" style={{ color: accent }}>{team.homeWinPct}%</span>
-            </div>
-            <div className="flex justify-between text-[12px]">
-              <span className="text-gray-500">Away win rate</span>
-              <span className="font-semibold text-[#f87171]">{team.awayWinPct}%</span>
-            </div>
-            <div className="divider my-2" />
-            <div className="flex justify-between text-[12px]">
-              <span className="text-gray-500">Home advantage</span>
-              <span className="font-bold" style={{ color }}>
-                {team.advantage > 0 ? '+' : ''}{team.advantage}%
-              </span>
-            </div>
-            <div className="flex justify-between text-[12px]">
-              <span className="text-gray-500">Games (H/A)</span>
-              <span className="text-gray-400">{team.homePlayed} / {team.awayPlayed}</span>
-            </div>
+            {insufficient ? (
+              <p className="text-[12px] text-gray-400 leading-snug">
+                Not enough finished matches in the current sample for this club (need home and away games in the dataset).
+              </p>
+            ) : (
+              <>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-gray-500">Home win rate</span>
+                  <span className="font-semibold" style={{ color: accent }}>{team.homeWinPct}%</span>
+                </div>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-gray-500">Away win rate</span>
+                  <span className="font-semibold text-[#f87171]">{team.awayWinPct}%</span>
+                </div>
+                <div className="divider my-2" />
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-gray-500">Home advantage</span>
+                  <span className="font-bold" style={{ color }}>
+                    {team.advantage > 0 ? '+' : ''}{team.advantage}%
+                  </span>
+                </div>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-gray-500">Games (H/A)</span>
+                  <span className="text-gray-400">{team.homePlayed} / {team.awayPlayed}</span>
+                </div>
+              </>
+            )}
           </div>
           {meta && (
             <div className="mt-3 pt-3 divider space-y-1.5 text-[11px] text-gray-500">
@@ -106,8 +117,9 @@ function TeamRow({ team, rank, accent, meta, maxAbs }) {
   )
 }
 
-export default function AdvantageChart({ teams = [], tab, teamMeta = {} }) {
-  const [showAll, setShowAll] = useState(false)
+export default function AdvantageChart({ teams = [], tab, teamMeta = {}, showAllByDefault }) {
+  const defaultExpanded = showAllByDefault ?? teams.length <= 24
+  const [showAll, setShowAll] = useState(defaultExpanded)
 
   if (teams.length === 0) {
     return (
@@ -117,10 +129,11 @@ export default function AdvantageChart({ teams = [], tab, teamMeta = {} }) {
     )
   }
 
-  const maxAbs    = Math.max(...teams.map(t => Math.abs(t.advantage)), 1)
+  const withStats = teams.filter(t => !t.insufficientData)
+  const maxAbs    = Math.max(...withStats.map(t => Math.abs(t.advantage)), 1)
   const displayed = showAll ? teams : teams.slice(0, 12)
-  const avgAdv    = teams.length
-    ? Math.round((teams.reduce((s, t) => s + t.advantage, 0) / teams.length) * 10) / 10
+  const avgAdv    = withStats.length
+    ? Math.round((withStats.reduce((s, t) => s + t.advantage, 0) / withStats.length) * 10) / 10
     : 0
 
   return (
@@ -134,6 +147,10 @@ export default function AdvantageChart({ teams = [], tab, teamMeta = {} }) {
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-[3px] rounded-full bg-[#f87171] inline-block" />
           Home disadvantage
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-[3px] rounded-full bg-[#64748b] inline-block" />
+          No sample
         </span>
         <span className="ml-auto">
           League avg: <span className="font-semibold text-white">{avgAdv > 0 ? '+' : ''}{avgAdv}%</span>
