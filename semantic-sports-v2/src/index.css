@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 10px;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-[#0d0f14] text-gray-100 antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    line-height: 1.5;
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-white/10 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-white/20; }
+
+  ::selection { background: rgba(255,255,255,0.15); }
+}
+
+/* ── Cards ──────────────────────────────────────────────────────── */
+@layer components {
+  .card {
+    @apply bg-[#161b25] border border-white/[0.06] rounded-xl;
+  }
+
+  .card-sm {
+    @apply bg-[#1a1f2e] border border-white/[0.05] rounded-lg;
+  }
+
+  .metric-card {
+    @apply bg-[#161b25] border border-white/[0.06] rounded-xl p-5
+           hover:border-white/10 transition-all duration-200;
+  }
+
+  .section-title {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500;
+  }
+
+  .h2 {
+    @apply text-lg font-bold text-white leading-tight;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full;
+  }
+
+  .btn {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
+           transition-all duration-150 cursor-pointer select-none;
+  }
+
+  .btn-ghost {
+    @apply btn text-gray-400 hover:text-white hover:bg-white/10;
+  }
+
+  .divider {
+    @apply border-t border-white/[0.06];
+  }
+}
+
+/* ── Animations ─────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.03) 0%,
+    rgba(255,255,255,0.07) 50%,
+    rgba(255,255,255,0.03) 100%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+.fade-up {
+  animation: fadeUp 0.35s ease both;
+}
+
+.bar-animate {
+  animation: scaleIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: left;
+}

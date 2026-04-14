@@ -1,0 +1,35 @@
+# Query 1: Premier League Teams — DBpedia
+# Endpoint: https://dbpedia.org/sparql
+# Fetches: team name, stadium, city, founding year for PL clubs
+# Wikidata entity for Premier League: wd:Q9448
+
+PREFIX dbo:  <http://dbpedia.org/ontology/>
+PREFIX dbr:  <http://dbpedia.org/resource/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:  <http://purl.org/dc/terms/>
+
+SELECT DISTINCT
+  ?team
+  ?teamName
+  ?stadium
+  ?stadiumName
+  ?city
+  ?cityName
+  ?founded
+  ?abstract
+WHERE {
+  ?team dbo:league dbr:Premier_League .
+  ?team rdfs:label ?teamName .
+  OPTIONAL { ?team dbo:ground ?stadium .
+             ?stadium rdfs:label ?stadiumName .
+             FILTER (lang(?stadiumName) = 'en') }
+  OPTIONAL { ?team dbo:city ?city .
+             ?city rdfs:label ?cityName .
+             FILTER (lang(?cityName) = 'en') }
+  OPTIONAL { ?team dbo:foundingDate ?founded . }
+  OPTIONAL { ?team dbo:abstract ?abstract .
+             FILTER (lang(?abstract) = 'en') }
+  FILTER (lang(?teamName) = 'en')
+}
+ORDER BY ?teamName
+LIMIT 50

@@ -1,0 +1,28 @@
+# Query 5: NBA Teams — Wikidata
+# Endpoint: https://query.wikidata.org/sparql
+# Fetches: NBA team names, arenas, cities, founding year, Wikidata URIs
+# NBA entity: wd:Q155223
+
+PREFIX wd:  <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT DISTINCT
+  ?team ?teamLabel
+  ?arena ?arenaLabel
+  ?city ?cityLabel
+  ?founded
+  ?conference ?conferenceLabel
+WHERE {
+  ?team wdt:P31 wd:Q4498974 .          # instance of: NBA franchise
+  OPTIONAL { ?team wdt:P18 ?logo . }
+  OPTIONAL { ?team wdt:P115 ?arena .   # home venue
+             ?arena wdt:P131 ?city . }
+  OPTIONAL { ?team wdt:P131 ?city . }
+  OPTIONAL { ?team wdt:P571 ?founded . }
+  OPTIONAL { ?team wdt:P527 ?conference . }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en" . }
+}
+ORDER BY ?teamLabel
+LIMIT 35

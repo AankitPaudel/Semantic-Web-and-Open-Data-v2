@@ -1,0 +1,38 @@
+# Query 7: International Cricket Matches — Wikidata
+# Endpoint: https://query.wikidata.org/sparql
+# Fetches: Test, ODI, and T20I matches between national teams
+# Covers bilateral series and home/away international fixtures
+
+PREFIX wd:  <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT DISTINCT
+  ?match ?matchLabel
+  ?date
+  ?team1 ?team1Label
+  ?team2 ?team2Label
+  ?winner ?winnerLabel
+  ?venue ?venueLabel
+  ?country ?countryLabel
+  ?format ?formatLabel
+WHERE {
+  ?match wdt:P31 ?format .
+  VALUES ?format {
+    wd:Q1137366   # cricket match
+    wd:Q854510    # Test cricket match
+    wd:Q1081326   # One Day International
+    wd:Q1083278   # Twenty20 International
+  }
+  OPTIONAL { ?match wdt:P585 ?date . }
+  OPTIONAL { ?match wdt:P1923 ?team1 . }
+  OPTIONAL { ?match wdt:P1924 ?team2 . }
+  OPTIONAL { ?match wdt:P1346 ?winner . }
+  OPTIONAL { ?match wdt:P276 ?venue .
+             ?venue wdt:P17 ?country . }
+  FILTER(?date >= "2018-01-01"^^xsd:dateTime)
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en" . }
+}
+ORDER BY DESC(?date)
+LIMIT 300

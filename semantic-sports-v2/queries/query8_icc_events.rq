@@ -1,0 +1,38 @@
+# Query 8: ICC Tournament Matches — Wikidata
+# Endpoint: https://query.wikidata.org/sparql
+# Fetches: ICC World Cup, T20 World Cup, Champions Trophy matches
+# ICC Cricket World Cup:   wd:Q193070
+# ICC T20 World Cup:       wd:Q608365
+# ICC Champions Trophy:    wd:Q745708
+
+PREFIX wd:  <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT DISTINCT
+  ?match ?matchLabel
+  ?date
+  ?team1 ?team1Label
+  ?team2 ?team2Label
+  ?winner ?winnerLabel
+  ?venue ?venueLabel
+  ?tournament ?tournamentLabel
+WHERE {
+  ?match wdt:P31 wd:Q1137366 .         # instance of: cricket match
+  ?match wdt:P361 ?tournament .        # part of tournament
+  VALUES ?tournament {
+    wd:Q193070    # ICC Cricket World Cup
+    wd:Q608365    # ICC T20 World Cup
+    wd:Q745708    # ICC Champions Trophy
+  }
+  OPTIONAL { ?match wdt:P585 ?date . }
+  OPTIONAL { ?match wdt:P1923 ?team1 . }
+  OPTIONAL { ?match wdt:P1924 ?team2 . }
+  OPTIONAL { ?match wdt:P1346 ?winner . }
+  OPTIONAL { ?match wdt:P276 ?venue . }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en" . }
+}
+ORDER BY DESC(?date)
+LIMIT 300

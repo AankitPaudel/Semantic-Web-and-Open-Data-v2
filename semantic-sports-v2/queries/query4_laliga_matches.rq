@@ -1,0 +1,44 @@
+# Query 4: La Liga Match Results — Wikidata
+# Endpoint: https://query.wikidata.org/sparql
+# Fetches: La Liga match results across 6 seasons (2018–2024)
+# La Liga entity: wd:Q7238
+# Season coverage:
+#   wd:Q119118059 = 2023-24
+#   wd:Q111963085 = 2022-23
+#   wd:Q106624612 = 2021-22
+#   wd:Q94051395  = 2020-21
+#   wd:Q76390958  = 2019-20
+#   wd:Q55268030  = 2018-19
+# Expected result: ~2,280 matches (6 x 380)
+
+PREFIX wd:  <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT DISTINCT
+  ?match
+  ?date
+  ?homeTeam ?homeTeamLabel
+  ?awayTeam ?awayTeamLabel
+  ?homeGoals
+  ?awayGoals
+WHERE {
+  VALUES ?season {
+    wd:Q119118059
+    wd:Q111963085
+    wd:Q106624612
+    wd:Q94051395
+    wd:Q76390958
+    wd:Q55268030
+  }
+  ?match wdt:P2453 ?season .
+  ?match wdt:P6112 ?homeTeam ;
+         wdt:P6113 ?awayTeam ;
+         wdt:P585  ?date ;
+         wdt:P1350 ?homeGoals ;
+         wdt:P1351 ?awayGoals .
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en" . }
+}
+ORDER BY DESC(?date)
+LIMIT 2500

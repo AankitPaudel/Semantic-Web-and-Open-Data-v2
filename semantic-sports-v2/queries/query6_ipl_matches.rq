@@ -1,0 +1,31 @@
+# Query 6: IPL Match Results — Wikidata
+# Endpoint: https://query.wikidata.org/sparql
+# Fetches: IPL match results with venue data
+# IPL entity: wd:Q1100759
+
+PREFIX wd:  <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT DISTINCT
+  ?match ?matchLabel
+  ?date
+  ?homeTeam ?homeTeamLabel
+  ?awayTeam ?awayTeamLabel
+  ?winner ?winnerLabel
+  ?venue ?venueLabel
+  ?season ?seasonLabel
+WHERE {
+  ?match wdt:P31 wd:Q1137366 .         # instance of: cricket match
+  ?match wdt:P1813 ?season .
+  FILTER(CONTAINS(STR(?season), "IPL") || ?season = wd:Q1100759)
+  OPTIONAL { ?match wdt:P585 ?date . }
+  OPTIONAL { ?match wdt:P1923 ?homeTeam . }
+  OPTIONAL { ?match wdt:P1924 ?awayTeam . }
+  OPTIONAL { ?match wdt:P1346 ?winner . }
+  OPTIONAL { ?match wdt:P276 ?venue . }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en" . }
+}
+ORDER BY DESC(?date)
+LIMIT 200

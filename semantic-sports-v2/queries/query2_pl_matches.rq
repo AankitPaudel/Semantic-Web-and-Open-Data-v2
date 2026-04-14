@@ -1,0 +1,44 @@
+# Query 2: Premier League Match Results — Wikidata
+# Endpoint: https://query.wikidata.org/sparql
+# Fetches: PL match results across 6 seasons (2018–2024)
+# Premier League entity: wd:Q9448
+# Season coverage:
+#   wd:Q116198950 = 2023-24
+#   wd:Q111963073 = 2022-23
+#   wd:Q106624599 = 2021-22
+#   wd:Q94051381  = 2020-21
+#   wd:Q76390947  = 2019-20
+#   wd:Q55268018  = 2018-19
+# Expected result: ~2,280 matches (6 x 380)
+
+PREFIX wd:  <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+
+SELECT DISTINCT
+  ?match
+  ?date
+  ?homeTeam ?homeTeamLabel
+  ?awayTeam ?awayTeamLabel
+  ?homeGoals
+  ?awayGoals
+WHERE {
+  VALUES ?season {
+    wd:Q116198950
+    wd:Q111963073
+    wd:Q106624599
+    wd:Q94051381
+    wd:Q76390947
+    wd:Q55268018
+  }
+  ?match wdt:P2453 ?season .
+  ?match wdt:P6112 ?homeTeam ;
+         wdt:P6113 ?awayTeam ;
+         wdt:P585  ?date ;
+         wdt:P1350 ?homeGoals ;
+         wdt:P1351 ?awayGoals .
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en" . }
+}
+ORDER BY DESC(?date)
+LIMIT 2500
