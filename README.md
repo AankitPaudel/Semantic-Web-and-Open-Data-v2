@@ -129,6 +129,3 @@ Coursework for CS4625/5625 at the University of Idaho. Reuse for learning and ci
 
 ---
 
-## Remote on GitHub
-
-**https://github.com/AankitPaudel/Semantic-Web-and-Open-Data-v2**
