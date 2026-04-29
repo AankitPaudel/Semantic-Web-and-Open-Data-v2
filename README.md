@@ -1,6 +1,6 @@
 # Semantic Web & Open Data — Home Advantage & Sports Analytics
 
-[![Course](https://img.shields.io/badge/Course-CS4625%2F5625-Semantic%20Web-0366d6)](https://www.uidaho.edu/)
+[![Course](https://img.shields.io/badge/Course-CS4625%2F5625-Semantic%20Web-0366d6)](https://www.uidaho.edu/
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Node](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 
